@@ -30,6 +30,18 @@ public class BenchmarkDecayCounter
     @State(Scope.Benchmark)
     public static class Counter
     {
+        private DecayCounter counter;
+
+        @Setup
+        public void setup()
+        {
+            counter = new DecayCounter(ExponentialDecay.oneMinute());
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class ShardedCounter
+    {
         private ShardedDecayCounter counter;
 
         @Setup
@@ -72,6 +84,27 @@ public class BenchmarkDecayCounter
     @Group("counter")
     @GroupThreads(5)
     public Object benchmarkGet(Counter counter)
+    {
+        counter.counter.getCount();
+        return counter.counter.getRate();
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(NUMBER_OF_ENTRIES)
+    @Group("shardedCounter")
+    @GroupThreads(40)
+    public Object benchmarkShardedAdd(ShardedCounter counter, Data data)
+    {
+        for (long value : data.values) {
+            counter.counter.add(value);
+        }
+        return counter.counter;
+    }
+
+    @Benchmark
+    @Group("shardedCounter")
+    @GroupThreads(5)
+    public Object benchmarkShardedGet(ShardedCounter counter)
     {
         counter.counter.getCount();
         return counter.counter.getRate();
