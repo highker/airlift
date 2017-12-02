@@ -1,7 +1,6 @@
 package io.airlift.stats;
 
 import com.google.common.base.Ticker;
-import com.google.common.util.concurrent.AtomicDouble;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -18,12 +17,11 @@ public class ShardedDecayCounter
 
     private final double alpha;
     private final Ticker ticker;
+    @SuppressWarnings("unchecked")
     private final AtomicReference<DecayCounter>[] counters = new AtomicReference[SHARDS];
 
     private final AtomicLong lastMerge = new AtomicLong();
-    private final AtomicDouble mergedCount = new AtomicDouble();
     private DecayCounter merged;
-
 
     public ShardedDecayCounter(double alpha)
     {
@@ -53,7 +51,6 @@ public class ShardedDecayCounter
             counters[i].get().reset();
         }
         merged.reset();
-        mergedCount.set(0);
     }
 
     @Managed
@@ -72,11 +69,10 @@ public class ShardedDecayCounter
                         merged.merge(previousCounters[i]);
                     }
                     lastMerge.set(now);
-                    mergedCount.set(merged.getCount());
                 }
             }
         }
-        return mergedCount.get();
+        return merged.getCount();
     }
 
     @Managed
